@@ -58,54 +58,22 @@ index_add opens the target file in binary read mode, reads its full contents int
 
 ## Phase 4: Commits and History
 
-**Filesystem Concepts:** Linked structures on disk, reference files, atomic pointer updates
+**What was implemented**
+commit_create in commit.c.
 
-**Files:** `commit.h` (read), `commit.c` (implement all TODO functions)
-
-### What to Implement
-
-Open `commit.c`. One function is marked `// TODO`:
-
-1. **`commit_create`** — The main commit function:
-   - Builds a tree from the index using `tree_from_index()` (**not** from the working directory — commits snapshot the staged state)
-   - Reads current HEAD as the parent (may not exist for first commit)
-   - Gets the author string from `pes_author()` (defined in `pes.h`)
-   - Writes the commit object, then updates HEAD
-
-`commit_parse`, `commit_serialize`, `commit_walk`, `head_read`, and `head_update` are already implemented — read them to understand the commit format before writing `commit_create`.
-
-The commit text format is specified in the comment at the top of `commit.c`.
-
-### Testing
-
-```bash
-./pes init
-echo "Hello" > hello.txt
-./pes add hello.txt
-./pes commit -m "Initial commit"
-
-echo "World" >> hello.txt
-./pes add hello.txt
-./pes commit -m "Add world"
-
-echo "Goodbye" > bye.txt
-./pes add bye.txt
-./pes commit -m "Add farewell"
-
-./pes log
-```
-
-You can also run the full integration test:
-
-```bash
-make test-integration
-```
+The function first calls tree_from_index to build the tree snapshot of the current staging area and get the root tree hash. It then fills a Commit struct: sets commit.tree to the returned hash, sets commit.timestamp to time(NULL), copies the author string from pes_author(), and copies the message parameter. It attempts to read the current HEAD commit hash via head_read — if this succeeds the commit is given a parent; if head_read returns -1 (empty repository, first commit), has_parent is left as 0. The struct is then serialised to a text buffer using commit_serialize, the buffer is written to the object store using object_write(OBJ_COMMIT, ...), and finally head_update atomically moves the current branch ref to the new commit hash. The new commit's ObjectID is written into *commit_id_out.
 
 **📸 Screenshot 4A:** Output of `./pes log` showing three commits with hashes, authors, timestamps, and messages.
 
+![alt text](image-6.png)
+
 **📸 Screenshot 4B:** `find .pes -type f | sort` showing object store growth after three commits.
 
+![alt text](image-7.png)
+
 **📸 Screenshot 4C:** `cat .pes/refs/heads/main` and `cat .pes/HEAD` showing the reference chain.
+
+![alt text](image-8.png)
 
 ---
 
