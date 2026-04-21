@@ -34,6 +34,8 @@ typedef struct {
     uint8_t hash[HASH_SIZE];
 } ObjectID;
 
+int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out);
+
 // ─── Utility Functions (implement in object.c) ─────────────────────────────
 
 // Convert a binary hash to a 64-character hex string (+ null terminator).

@@ -32,6 +32,9 @@ void test_tree_roundtrip(void) {
     void *data;
     size_t len;
     int rc = tree_serialize(&original, &data, &len);
+    
+    ObjectID id;
+    object_write(OBJ_TREE, data, len, &id);
     assert(rc == 0);
     assert(data != NULL);
     assert(len > 0);
