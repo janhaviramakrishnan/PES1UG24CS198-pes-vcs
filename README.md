@@ -109,7 +109,7 @@ make test-integration
 
 ---
 
-Phase 5 — Branching and Checkout (Analysis)
+**Phase 5 — Branching and Checkout (Analysis)**
 Q5.1 — How would you implement pes checkout <branch>?
 What files need to change in .pes/:
 
@@ -172,7 +172,7 @@ Then switch to it. As long as garbage collection has not run, the objects are st
 
 The lesson is that in Git-like systems a commit is only as permanent as the branch or tag pointing to it. Commits themselves are immutable objects in the store; what changes is only the set of references that make them reachable.
 
-Phase 6 — Garbage Collection (Analysis)
+**Phase 6 — Garbage Collection (Analysis)**
 Q6.1 — Describe the algorithm for garbage collection. What data structure, and how many objects for 100k commits and 50 branches?
 Algorithm — Mark-and-Sweep:
 
