@@ -48,9 +48,11 @@ index_add opens the target file in binary read mode, reads its full contents int
 
 **📸 Screenshot 3A:** Run `./pes init`, `./pes add file1.txt file2.txt`, `./pes status` — show the output.
 
-
+![alt text](image-4.png)
 
 **📸 Screenshot 3B:** `cat .pes/index` showing the text-format index with your entries.
+
+![alt text](image-5.png)
 
 ---
 
