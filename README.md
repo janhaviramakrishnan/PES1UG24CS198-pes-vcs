@@ -37,57 +37,18 @@ Because tree_serialize internally sorts entries by name using qsort, the seriali
 
 ## Phase 3: The Index (Staging Area)
 
-**Filesystem Concepts:** File format design, atomic writes, change detection using metadata
+**What was implemented**
+index_load, index_save, and index_add in index.c.
 
-**Files:** `index.h` (read), `index.c` (implement all TODO functions)
+index_load opens .pes/index for reading. If the file does not exist, it initialises an empty Index struct and returns 0 (this is not an error — it simply means no files have been staged yet). Otherwise it reads the file line by line with fgets, parses each line using sscanf with the format "%o %64s %llu %u %511s" to extract the mode, hex hash, mtime, size, and path, converts the hex hash to an ObjectID using hex_to_hash, and increments the entry count.
 
-### What to Implement
+index_save makes a sorted copy of the entries using qsort, opens a temporary file at .pes/index.tmp for writing, writes each entry as a formatted text line, calls fflush + fsync + fclose to ensure the data is durable, then calls rename to atomically replace the live index file. If rename fails the temporary file is deleted.
 
-Open `index.c`. Three functions are marked `// TODO`:
-
-1. **`index_load`** — Reads the text-based `.pes/index` file into an `Index` struct.
-   - If the file doesn't exist, initializes an empty index (this is not an error)
-   - Parses each line: `<mode> <hash-hex> <mtime> <size> <path>`
-
-2. **`index_save`** — Writes the index atomically (temp file + rename).
-   - Sorts entries by path before writing
-   - Uses `fsync()` on the temp file before renaming
-
-3. **`index_add`** — Stages a file: reads it, writes blob to object store, updates index entry.
-   - Use the provided `index_find` to check for an existing entry
-
-`index_find` , `index_status` and `index_remove` are already implemented for you — read them to understand the index data structure before starting.
-
-#### Expected Output of `pes status`
-
-```
-Staged changes:
-  staged:     hello.txt
-  staged:     src/main.c
-
-Unstaged changes:
-  modified:   README.md
-  deleted:    old_file.txt
-
-Untracked files:
-  untracked:  notes.txt
-```
-
-If a section has no entries, print the header followed by `(nothing to show)`.
-
-### Testing
-
-```bash
-make pes
-./pes init
-echo "hello" > file1.txt
-echo "world" > file2.txt
-./pes add file1.txt file2.txt
-./pes status
-cat .pes/index    # Human-readable text format
-```
+index_add opens the target file in binary read mode, reads its full contents into a heap buffer, calls object_write(OBJ_BLOB, ...) to store the contents, calls lstat to retrieve the file's mode, mtime, and size, then either updates the existing index entry (if index_find returns a match) or appends a new entry. Finally it calls index_save to persist the updated index atomically.
 
 **📸 Screenshot 3A:** Run `./pes init`, `./pes add file1.txt file2.txt`, `./pes status` — show the output.
+
+
 
 **📸 Screenshot 3B:** `cat .pes/index` showing the text-format index with your entries.
 
