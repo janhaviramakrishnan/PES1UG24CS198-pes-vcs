@@ -193,15 +193,38 @@ int head_update(const ObjectID *new_commit) {
 //   - head_update       : moves the branch pointer to your new commit
 //
 // Returns 0 on success, -1 on error.
+#include <time.h>
+
 int commit_create(const char *message, ObjectID *commit_id_out) {
 
+    // Step 1: build tree
     ObjectID tree_id;
-
     if (tree_from_index(&tree_id) != 0) {
         return -1;
     }
-    // TODO: Implement commit creation
-    // (See Lab Appendix for logical steps)
-    (void)message; (void)commit_id_out;
-    return -1;
+
+    // Step 2: read parent
+    ObjectID parent_id;
+    int has_parent = (head_read(&parent_id) == 0);
+
+    // Step 3: build commit struct
+    Commit commit;
+
+    commit.tree = tree_id;
+
+    if (has_parent) {
+        commit.parent = parent_id;
+    } else {
+        memset(&commit.parent, 0, sizeof(ObjectID));
+    }
+
+    
+    strncpy(commit.author, pes_author(), sizeof(commit.author));
+    commit.author[sizeof(commit.author) - 1] = '\0';
+    commit.timestamp = (uint64_t)time(NULL);
+    strncpy(commit.message, message, sizeof(commit.message));
+    commit.message[sizeof(commit.message) - 1] = '\0';
+    // Step 4 and 5 will come next
+
+    return -1;  // temporary
 }
