@@ -51,7 +51,6 @@ int tree_parse(const void *data, size_t len, Tree *tree_out) {
         const uint8_t *space = memchr(ptr, ' ', end - ptr);
         if (!space) return -1; // Malformed data
 
-        // Parse mode into an isolated buffer
         char mode_str[16] = {0};
         size_t mode_len = space - ptr;
         if (mode_len >= sizeof(mode_str)) return -1;
