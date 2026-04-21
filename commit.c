@@ -226,5 +226,23 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
     commit.message[sizeof(commit.message) - 1] = '\0';
     // Step 4 and 5 will come next
 
+    // Step 4: serialize commit
+    void *data;
+    size_t len;
+
+    if (commit_serialize(&commit, &data, &len) != 0) {
+            return -1;
+    }
+
+    // write commit object
+    ObjectID commit_id;
+
+    if (object_write(OBJ_COMMIT, data, len, &commit_id) != 0) {
+        free(data);
+        return -1;
+    }
+
+    free(data);
+
     return -1;  // temporary
 }
