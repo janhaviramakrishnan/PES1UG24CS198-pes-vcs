@@ -19,34 +19,20 @@ object_read reconstructs the object's file path from the hash using object_path(
 
 ## Phase 2: Tree Objects
 
-**Filesystem Concepts:** Directory representation, recursive structures, file modes and permissions
+**What was Implemented**
+tree_from_index in tree.c.
 
-**Files:** `tree.h` (read), `tree.c` (implement all TODO functions)
+The function loads the current index, sorts all entries by path using qsort, then calls a recursive helper write_tree_level. This helper receives a slice of the sorted entries and a path prefix. For each entry, it checks whether the relative path (after stripping the prefix) contains a /. If it does not, the entry is a plain file at the current directory level and is added directly to the current Tree struct. If it does contain a /, the function extracts the directory name, computes the sub-prefix, advances through all entries sharing that sub-prefix, and recurses to build the subtree. The subtree is written to the object store via tree_serialize + object_write(OBJ_TREE, ...), and the current level gets a directory entry (mode 040000) pointing to the returned subtree hash. After all entries are processed at the current level, the current tree is serialized and written, and its hash is returned.
 
-### What to Implement
-
-Open `tree.c`. Implement the function marked `// TODO`:
-
-1. **`tree_from_index`** — Builds a tree hierarchy from the index.
-   - Handles nested paths: `"src/main.c"` must create a `src` subtree
-   - This is what `pes commit` uses to create the snapshot
-   - Writes all tree objects to the object store and returns the root hash
-
-### Testing
-
-```bash
-make test_tree
-./test_tree
-```
-
-The test program verifies:
-- Serialize → parse roundtrip preserves entries, modes, and hashes
-- Deterministic serialization (same entries in any order → identical output)
+Because tree_serialize internally sorts entries by name using qsort, the serialization is deterministic regardless of insertion order — identical directory contents always produce the same tree hash, which enables Git-style deduplication across commits.
 
 **📸 Screenshot 2A:** Output of `./test_tree` showing all tests passing.
 
+![alt text](image-2.png)
+
 **📸 Screenshot 2B:** Pick a tree object from `find .pes/objects -type f` and run `xxd .pes/objects/XX/YYY... | head -20` to show the raw binary format.
 
+![alt text](image-3.png)
 ---
 
 ## Phase 3: The Index (Staging Area)
