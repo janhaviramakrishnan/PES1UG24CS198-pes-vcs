@@ -133,3 +133,40 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
 //
 // Returns 0 on success, -1 on error.
 
+int tree_from_index(ObjectID *id_out) {
+    Index idx;
+    if (index_load(&idx) != 0) return -1;
+
+    Tree tree;
+    tree.count = 0;
+
+    for (int i = 0; i < idx.count; i++) {
+        IndexEntry *entry = &idx.entries[i];
+
+        TreeEntry *tentry = &tree.entries[tree.count++];
+
+        // Copy filename (no directory handling for simplicity)
+        strncpy(tentry->name, entry->path, sizeof(tentry->name));
+        tentry->name[sizeof(tentry->name) - 1] = '\0';
+
+        // Set mode
+        tentry->mode = entry->mode;
+
+        // Copy hash
+        tentry->hash = entry->hash;
+    }
+
+    // Serialize tree
+    void *data;
+    size_t len;
+
+    if (tree_serialize(&tree, &data, &len) != 0) return -1;
+
+    // Write tree object
+    int res = object_write(OBJ_TREE, data, len, id_out);
+
+    free(data);
+    return res;
+}
+
+
