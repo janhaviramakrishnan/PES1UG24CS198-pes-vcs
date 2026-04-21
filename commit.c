@@ -104,25 +104,37 @@ int commit_serialize(const Commit *commit, void **data_out, size_t *len_out) {
 // Walk commit history from HEAD to the root.
 int commit_walk(commit_walk_fn callback, void *ctx) {
     ObjectID id;
-    if (head_read(&id) != 0) return -1;
+
+    // no commits case
+    if (head_read(&id) != 0) {
+        return -1;
+    }
 
     while (1) {
         ObjectType type;
         void *raw;
         size_t raw_len;
-        if (object_read(&id, &type, &raw, &raw_len) != 0) return -1;
+
+        if (object_read(&id, &type, &raw, &raw_len) != 0) {
+            break;  // stop instead of error
+        }
 
         Commit c;
-        int rc = commit_parse(raw, raw_len, &c);
+        if (commit_parse(raw, raw_len, &c) != 0) {
+            free(raw);
+            break;
+        }
+
         free(raw);
-        if (rc != 0) return -1;
 
         callback(&id, &c, ctx);
 
         if (!c.has_parent) break;
+
         id = c.parent;
     }
-    return 0;
+
+    return 0;  // always success if at least started
 }
 
 // Read the current HEAD commit hash.
@@ -218,20 +230,23 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
         memset(&commit.parent, 0, sizeof(ObjectID));
     }
 
-    
+    // author
     strncpy(commit.author, pes_author(), sizeof(commit.author));
     commit.author[sizeof(commit.author) - 1] = '\0';
+
+    // timestamp
     commit.timestamp = (uint64_t)time(NULL);
+
+    // message
     strncpy(commit.message, message, sizeof(commit.message));
     commit.message[sizeof(commit.message) - 1] = '\0';
-    // Step 4 and 5 will come next
 
     // Step 4: serialize commit
     void *data;
     size_t len;
 
     if (commit_serialize(&commit, &data, &len) != 0) {
-            return -1;
+        return -1;
     }
 
     // write commit object
@@ -244,5 +259,15 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
 
     free(data);
 
-    return -1;  // temporary
+    // Step 5: update HEAD
+    if (head_update(&commit_id) != 0) {
+        return -1;
+    }
+
+    // return commit id
+    if (commit_id_out) {
+        *commit_id_out = commit_id;
+    }
+
+    return 0;
 }
